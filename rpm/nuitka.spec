@@ -55,13 +55,15 @@ BuildRequires:  ccache
 BuildRequires:  gdb
 %if 0%{?fedora} < 28 && 0%{?rhel} < 8
 Requires:       python-devel
-Requires:       python-markupsafe
 %endif
 %if 0%{?fedora} >= 24 || 0%{?suse_version} >= 1500
 Requires:       python3-devel
 %endif
 %if 0%{?rhel} == 8
 Requires:       python36-devel
+%endif
+%if 0%{?fedora} < 31
+Requires:       python-markupsafe
 %endif
 %if 0%{?fedora} >= 24 || 0%{?rhel} == 8
 Requires:       python3-markupsafe
