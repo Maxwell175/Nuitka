@@ -120,6 +120,7 @@ from .reports.Reports import writeCompilationReports
 from .tree.Building import buildMainModuleTree
 from .tree.SourceHandling import writeSourceCode
 from .TreeXML import dumpTreeXMLToFile
+from .utils.Json import loadJsonFromFilename
 
 
 def _createMainModule():
@@ -1038,22 +1039,41 @@ def _main():
 
         setMainEntryPoint(binary_filename)
 
-        for module in ModuleRegistry.getDoneModules():
-            addIncludedEntryPoints(Plugins.considerExtraDlls(module))
+        if not Options.isExperimental("embedded"):
+            for module in ModuleRegistry.getDoneModules():
+                addIncludedEntryPoints(Plugins.considerExtraDlls(module))
 
-        detectUsedDLLs(
-            standalone_entry_points=getStandaloneEntryPoints(),
-            source_dir=OutputDirectories.getSourceDirectoryPath(),
-        )
+            detectUsedDLLs(
+                standalone_entry_points=getStandaloneEntryPoints(),
+                source_dir=OutputDirectories.getSourceDirectoryPath(),
+            )
 
         dist_dir = OutputDirectories.getStandaloneDirectoryPath()
 
-        copyDllsUsed(
-            dist_dir=dist_dir,
-            standalone_entry_points=getStandaloneEntryPoints(),
-        )
+        if not Options.isExperimental("embedded"):
+            copyDllsUsed(
+                dist_dir=dist_dir,
+                standalone_entry_points=getStandaloneEntryPoints(),
+            )
 
     copyDataFiles(standalone_entry_points=getStandaloneEntryPoints())
+
+    if Options.isExperimental("embedded"):
+        link_data = loadJsonFromFilename(
+            os.path.join(sys.prefix, "link.json")
+        )
+        libs_to_merge = []
+        combined_lib = os.path.join(dist_dir, "nuitka_python" + getSharedLibrarySuffix(preferred=True))
+        if Options.isMacOS():
+            for lib in link_data["libraries"]:
+                if os.path.isfile(lib):
+                    libs_to_merge.append(lib)
+            callProcess(["libtool", "-o", combined_lib, binary_filename, *libs_to_merge])
+
+        general.warning("The combined standalone library is available at " + combined_lib)
+        if "link_flags" in link_data:
+            general.warning("The following link flags must be included in your final link: " +
+                            " ".join(link_data["link_flags"]))
 
     if Options.isStandaloneMode():
         Plugins.onStandaloneDistributionFinished(dist_dir)

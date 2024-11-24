@@ -115,7 +115,7 @@ def getResultFullpath(onefile):
 
     result = getResultBasePath(onefile=onefile)
 
-    if Options.shallMakeModule():
+    if Options.shallMakeModule() or Options.isExperimental("embedded"):
         result += getSharedLibrarySuffix(preferred=True)
     else:
         output_filename = Options.getOutputFilename()

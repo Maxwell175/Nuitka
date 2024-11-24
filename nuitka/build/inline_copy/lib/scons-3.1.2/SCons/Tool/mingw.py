@@ -148,7 +148,7 @@ def generate(env):
     # Most of mingw is the same as gcc and friends...
     # Nuitka: We need less than these:
     # gnu_tools = ['gcc', 'g++', 'gnulink', 'ar', 'gas', 'gfortran', 'm4']
-    gnu_tools = ['gcc', 'g++', 'gnulink']
+    gnu_tools = ['gcc', 'g++', 'gnulink', 'ar']
     for tool in gnu_tools:
         SCons.Tool.Tool(tool)(env)
 

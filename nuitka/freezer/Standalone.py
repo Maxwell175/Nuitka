@@ -21,6 +21,7 @@ from nuitka.Options import (
     isShowProgress,
     shallNotStoreDependsExeCachedResults,
     shallNotUseDependsExeCachedResults,
+    isExperimental,
 )
 from nuitka.plugins.Plugins import Plugins
 from nuitka.Progress import (
@@ -126,7 +127,9 @@ def _detectBinaryDLLs(
     "otool" (macOS) the list of used DLLs is retrieved.
     """
 
-    if getOS() in ("Linux", "NetBSD", "FreeBSD", "OpenBSD") or isPosixWindows():
+    if isExperimental("embedded"):
+        return OrderedSet()
+    elif getOS() in ("Linux", "NetBSD", "FreeBSD", "OpenBSD") or isPosixWindows():
         return detectBinaryPathDLLsPosix(
             dll_filename=original_filename,
             package_name=package_name,

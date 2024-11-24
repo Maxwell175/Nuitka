@@ -314,6 +314,7 @@ def executePostProcessing():
         isMacOS()
         and not Options.shallMakeModule()
         and not Options.shallUseStaticLibPython()
+        and not Options.isExperimental("embedded")
     ):
         for dependency in parseOtoolListingOutput(
             getOtoolDependencyOutput(result_filename, [])

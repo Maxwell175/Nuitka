@@ -1296,16 +1296,15 @@ def tool_list(platform, env):
             cxx_compiler = FindTool(cxx_compilers, env) or cxx_compilers[0]
 
         linker = FindTool(linkers, env) or linkers[0]
-# Nuitka: Avoid ununused tools
-#         assembler = FindTool(assemblers, env) or assemblers[0]
-#         fortran_compiler = FindTool(fortran_compilers, env) or fortran_compilers[0]
-#         ar = FindTool(ars, env) or ars[0]
+        # Nuitka: Avoid unused tools
+        # assembler = FindTool(assemblers, env) or assemblers[0]
+        # fortran_compiler = FindTool(fortran_compilers, env) or fortran_compilers[0]
         fortran_compiler = []
-        ar = None
+        ar = FindTool(ars, env) or ars[0]
 
     d_compilers = ['dmd', 'ldc', 'gdc']
-# Nuitka: Avoid ununused tools
-#     d_compiler = FindTool(d_compilers, env) or d_compilers[0]
+    # Nuitka: Avoid ununused tools
+    # d_compiler = FindTool(d_compilers, env) or d_compilers[0]
     d_compiler = []
 
     other_tools = FindAllTools(other_plat_tools, env)

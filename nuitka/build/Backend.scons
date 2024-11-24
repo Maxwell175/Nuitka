@@ -969,6 +969,9 @@ if module_mode:
     target = env.SharedLibrary(
         result_base_path, source_files, no_import_lib=no_import_lib
     )
+elif "embedded" in env.experimental_flags:
+    result_base_path = changeFilenameExtension(result_exe, "")
+    target = env.StaticLibrary(result_base_path, source_files)
 else:
     target = env.Program(result_exe, source_files)
 

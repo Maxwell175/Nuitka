@@ -1183,6 +1183,13 @@ PyObject *getOriginalArgv0Object(void) {
     return Nuitka_String_FromFilename(original_argv0);
 }
 
+#ifdef _NUITKA_EXPERIMENTAL_EMBEDDED
+#if defined(_WIN32)
+int Nuitka_Init(int argc, wchar_t **argv) {
+#else
+int Nuitka_Init(int argc, char **argv) {
+#endif
+#else
 #ifdef _NUITKA_WINMAIN_ENTRY_POINT
 int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCmdLine, int nCmdShow) {
     /* MSVC, MINGW64 */
@@ -1196,6 +1203,7 @@ int wmain(int argc, wchar_t **argv) {
 #endif
 #else
 int main(int argc, char **argv) {
+#endif
 #endif
 #endif
 
@@ -1793,6 +1801,7 @@ orig_argv = argv;
         PyDict_DelItemString(Nuitka_GetSysModules(), NUITKA_MAIN_MODULE_NAME);
         DROP_ERROR_OCCURRED(tstate);
 
+#ifndef _NUITKA_EXPERIMENTAL_EMBEDDED
 #if _NUITKA_PLUGIN_WINDOWS_SERVICE_ENABLED
         NUITKA_PRINT_TRACE("main(): Calling plugin SvcLaunchService() entry point.");
         SvcLaunchService();
@@ -1803,8 +1812,16 @@ orig_argv = argv;
     NUITKA_PRINT_TIMING("main(): Exited from " NUITKA_MAIN_MODULE_NAME ".");
 
 #endif
+#endif
 #ifdef _NUITKA_PLUGIN_MULTIPROCESSING_ENABLED
     }
+#endif
+
+#ifdef _NUITKA_EXPERIMENTAL_EMBEDDED
+}
+
+void Nuitka_Exit() {
+    PyThreadState *tstate = PyThreadState_GET();
 #endif
 
 #if _NUITKA_PROFILE
