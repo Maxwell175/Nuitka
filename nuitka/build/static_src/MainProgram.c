@@ -12,6 +12,10 @@
  *
  */
 
+#ifdef _MONOLITHPY
+#include "np_embed.h"
+#endif
+
 #if defined(_WIN32)
 #include <windows.h>
 #endif
@@ -1366,7 +1370,11 @@ void setLANGSystemLocaleMacOS(void) {
 }
 #endif
 
+#ifdef _NUITKA_EXPERIMENTAL_EMBEDDED
+int Nuitka_Init(int argc, native_command_line_argument_t **argv) {
+#else
 static int Nuitka_Main(int argc, native_command_line_argument_t **argv) {
+#endif
 #if defined(_NUITKA_HIDE_CONSOLE_WINDOW)
     hideConsoleIfSpawned();
 #endif
@@ -2008,18 +2016,27 @@ static int Nuitka_Main(int argc, native_command_line_argument_t **argv) {
         PyDict_DelItemString(Nuitka_GetSysModules(), NUITKA_MAIN_MODULE_NAME);
         DROP_ERROR_OCCURRED(tstate);
 
+#ifndef _NUITKA_EXPERIMENTAL_EMBEDDED
 #if _NUITKA_PLUGIN_WINDOWS_SERVICE_ENABLED
         NUITKA_PRINT_TRACE("main(): Calling plugin SvcLaunchService() entry point.");
         SvcLaunchService();
 #else
-    /* Execute the "__main__" module. */
-    NUITKA_PRINT_TIMING("main(): Calling " NUITKA_MAIN_MODULE_NAME ".");
-    EXECUTE_MAIN_MODULE(tstate, NUITKA_MAIN_MODULE_NAME, NUITKA_MAIN_IS_PACKAGE_BOOL);
-    NUITKA_PRINT_TIMING("main(): Exited from " NUITKA_MAIN_MODULE_NAME ".");
+        /* Execute the "__main__" module. */
+        NUITKA_PRINT_TIMING("main(): Calling " NUITKA_MAIN_MODULE_NAME ".");
+        EXECUTE_MAIN_MODULE(tstate, NUITKA_MAIN_MODULE_NAME, NUITKA_MAIN_IS_PACKAGE_BOOL);
+        NUITKA_PRINT_TIMING("main(): Exited from " NUITKA_MAIN_MODULE_NAME ".");
 
+#endif
 #endif
 #ifdef _NUITKA_PLUGIN_MULTIPROCESSING_ENABLED
     }
+#endif
+
+#ifdef _NUITKA_EXPERIMENTAL_EMBEDDED
+}
+
+void Nuitka_Exit() {
+    PyThreadState *tstate = PyThreadState_GET();
 #endif
 
 #if _NUITKA_PROFILE
@@ -2050,6 +2067,7 @@ static int Nuitka_Main(int argc, native_command_line_argument_t **argv) {
     NUITKA_CANNOT_GET_HERE("Py_Exit does not return");
 }
 
+#ifndef _NUITKA_EXPERIMENTAL_EMBEDDED
 #ifdef _NUITKA_WINMAIN_ENTRY_POINT
 int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCmdLine, int nCmdShow) {
     /* MSVC, MINGW64 both have this */
@@ -2092,6 +2110,7 @@ NUITKA_DLL_FUNCTION int run_code(int argc, native_command_line_argument_t **argv
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 
 #endif

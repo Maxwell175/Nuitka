@@ -276,7 +276,14 @@ elif env.exe_mode or env.dll_mode:
         link_data = loadJsonFromFilename(
             os.path.join(env.python_prefix_external, "link.json")
         )
+        if os.name == "nt":
+            lib_name = "np_embed.lib"
+        else:
+            lib_name = "libnp_embed.a"
+
         for lib in link_data["libraries"]:
+            if "embedded" in env.experimental_flags and lib.endswith(lib_name):
+                continue
             # Need to prevent Scons from stripping .a from the passed in libs.
             if lib.startswith(":") and lib.endswith(".a"):
                 env.Append(_LIBFLAGS=["-l" + lib])
@@ -284,6 +291,8 @@ elif env.exe_mode or env.dll_mode:
                 env.Append(_LIBFLAGS=[lib])
             else:
                 env.Append(LIBS=[lib])
+        if "embedded" in env.experimental_flags:
+            env.Append(LIBS=[os.path.join(env.source_dir, "Embedded", lib_name)])
         env.Append(LIBPATH=link_data["library_dirs"])
         for define, value in link_data["macros"]:
             if value:
@@ -489,6 +498,41 @@ elif env.dll_mode:
         source_files,
         no_import_lib=env.no_import_lib,
     )
+elif "embedded" in env.experimental_flags:
+    result_base_path = changeFilenameExtension(result_exe, "")
+    if os.name == "nt":
+        MAX_STATIC_LIB_SIZE = 2147483648
+        targets = []
+        pending_libs = []
+        pending_lib_size = 0
+        for file in source_files:
+            curr_file_size = os.path.getsize(file)
+            if pending_lib_size + curr_file_size >= MAX_STATIC_LIB_SIZE:
+                curr_result_lib_path = result_base_path
+                if len(targets) > 0:
+                    curr_result_lib_path += str(len(targets) + 1)
+                targets.append(
+                    env.StaticLibrary(
+                        curr_result_lib_path,
+                        pending_libs,
+                    )
+                )
+                pending_libs = []
+                pending_lib_size = 0
+            pending_libs.append(file)
+            pending_lib_size += curr_file_size
+
+        curr_result_lib_path = result_base_path
+        if len(targets) > 0:
+            curr_result_lib_path += str(len(targets) + 1)
+        targets.append(
+            env.StaticLibrary(
+                curr_result_lib_path,
+                pending_libs,
+            )
+        )
+    else:
+        targets = [env.StaticLibrary(result_base_path, source_files)]
 else:
     # For scons internal use, we use Python native paths as MSYS2 does wrong things otherwise.
     target = env.Program(os.path.normpath(result_exe), source_files)
@@ -614,12 +658,13 @@ if env.msvc_mode and not disable_ccache:
         source_dir=env.source_dir,
     )
 
-writeSconsReport(env=env, target=target)
+writeSconsReport(env=env, target=targets[0])
 
 setSconsProgressBarTotal(name=env.progressbar_name, total=len(source_files))
 
-scons_details_logger.info("Launching Scons target: %s" % target)
-env.Default(target)
+scons_details_logger.info("Launching Scons target: %s" % targets[0])
+
+env.Default(*targets)
 
 #     Part of "Nuitka", an optimizing Python compiler that is compatible and
 #     integrates with CPython, but also works on its own.

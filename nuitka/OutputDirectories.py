@@ -17,6 +17,7 @@ from nuitka.options.Options import (
     getOutputFolderName,
     getOutputPath,
     getPgoExecutable,
+    isExperimental,
     isOnefileMode,
     isStandaloneMode,
     shallCreateAppBundle,
@@ -215,7 +216,7 @@ def getResultFullpath(onefile, real):
 
     result = getResultBasePath(onefile=onefile, real=real)
 
-    if shallMakeModule():
+    if shallMakeModule() or isExperimental("embedded"):
         result += getExtensionModuleSuffix(preferred=True)
     elif shallMakeDll() and not onefile:
         # TODO: Could actually respect getOutputFilename() for DLLs, these don't

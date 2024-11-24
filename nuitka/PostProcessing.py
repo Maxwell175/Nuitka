@@ -18,6 +18,7 @@ from nuitka.options.Options import (
     getWindowsIconPaths,
     getWindowsSplashScreen,
     getWindowsVersionInfoStrings,
+    isExperimental,
     isOnefileMode,
     isStandaloneMode,
     shallAskForWindowsAdminRights,
@@ -489,7 +490,7 @@ def executePostProcessing(result_filename):
     # Lots of cases to deal with,
     # pylint: disable=too-many-branches
 
-    if isWin32Windows():
+    if isWin32Windows() and not isExperimental("embedded"):
         if not shallMakeModule():
             if python_version < 0x300:
                 # Copy the Windows manifest from the CPython binary to the created
@@ -517,7 +518,12 @@ def executePostProcessing(result_filename):
 
     # On macOS, we update the executable path for searching the "libpython"
     # library.
-    if isMacOS() and not shallMakeModule() and not shallUseStaticLibPython():
+    if (
+        isMacOS()
+        and not shallMakeModule()
+        and not shallUseStaticLibPython()
+        and not isExperimental("embedded")
+    ):
         for dependency in parseOtoolListingOutput(
             getOtoolDependencyOutput(result_filename)
         ):

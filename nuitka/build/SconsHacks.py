@@ -54,8 +54,6 @@ _blocked_tools = (
     "gdc",
     "flex",
     "bison",
-    "ranlib",
-    "ar",
     "ldc2",
     "pdflatex",
     "pdftex",

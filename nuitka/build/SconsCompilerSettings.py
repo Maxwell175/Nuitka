@@ -630,6 +630,9 @@ def decideConstantsBlobResourceMode(env):
     if "NUITKA_RESOURCE_MODE" in os.environ:
         resource_mode = os.environ["NUITKA_RESOURCE_MODE"]
         reason = "user provided"
+    elif "embedded" in env.experimental_flags:
+        resource_mode = "code"
+        reason = "embedded mode requires code resources"
     elif env.zig_mode:
         resource_mode = "c23_embed"
         reason = "default for zig"

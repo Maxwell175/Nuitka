@@ -703,10 +703,11 @@ def scanIncludedPackage(package_name):
             "Error, failed to locate package '%s' you asked to include." % package_name
         )
 
-    scanPluginPath(
-        plugin_filename=package_directory,
-        module_package=package_name.getPackageName(),
-    )
+    if package_directory is not None:
+        scanPluginPath(
+            plugin_filename=package_directory,
+            module_package=package_name.getPackageName(),
+        )
 
 
 #     Part of "Nuitka", an optimizing Python compiler that is compatible and

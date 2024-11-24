@@ -11,6 +11,7 @@ a distribution folder.
 """
 
 import os
+import hashlib
 import sys
 
 from nuitka.build.DataComposerInterface import runDataComposer
@@ -93,6 +94,7 @@ from nuitka.options.Options import (
     isShowMemory,
     isShowProgress,
     isStandaloneMode,
+    isWin32Windows,
     shallAskForWindowsAdminRights,
     shallCreateDmgFile,
     shallCreatePythonPgoInput,
@@ -160,11 +162,13 @@ from nuitka.utils.Execution import (
 )
 from nuitka.utils.FileOperations import (
     changeFilenameExtension,
+    copyFile,
     deleteFile,
     getExternalUsePath,
     getNormalizedPathJoin,
     getReportPath,
     isFilesystemEncodable,
+    makePath,
     openTextFile,
     removeDirectory,
 )
@@ -201,6 +205,7 @@ from .States import states
 from .tree.Building import buildMainModuleTree
 from .tree.SourceHandling import writeSourceCode
 from .TreeXML import dumpTreeXMLToFile
+from .utils.Json import loadJsonFromFilename
 
 
 def _createMainModule():
@@ -335,13 +340,13 @@ use the correct name instead."""
     if isStandaloneMode():
         checkFreezingModuleSet()
 
-    # Check if distribution meta data is included, that cannot be used.
-    for distribution_name, meta_data_value in getDistributionMetadataValues():
-        if not ModuleRegistry.hasDoneModule(meta_data_value.module_name):
-            return inclusion_logger.sysexit(
-                "Error, including metadata for distribution '%s' without including related package '%s'."
-                % (distribution_name, meta_data_value.module_name)
-            )
+    # # Check if distribution meta data is included, that cannot be used.
+    # for distribution_name, meta_data_value in getDistributionMetadataValues():
+    #     if not ModuleRegistry.hasDoneModule(meta_data_value.module_name):
+    #         inclusion_logger.sysexit(
+    #             "Error, including metadata for distribution '%s' without including related package '%s'."
+    #             % (distribution_name, meta_data_value.module_name)
+    #         )
 
     # Allow plugins to comment on final module set.
     onModuleCompleteSet()
@@ -1136,6 +1141,40 @@ def _main():
 
     dumpTreeXML()
 
+    if isExperimental("nuitka-python-embed"):
+        import sysconfig
+        import subprocess
+        from nuitka.freezer.IncludedDataFiles import getIncludedDataFiles
+        from nuitka.utils.FileOperations import copyTree, copyFileWithPermissions
+        embed_data_dir = os.path.join(OutputDirectories.getSourceDirectoryPath(), "Embedded", "embed_data")
+        relative_data_dir = os.path.join(embed_data_dir, "__relative__")
+        makePath(relative_data_dir)
+        copyTree(os.path.join(sysconfig.get_config_var("prefix"), "Embedded", "embed_data"), embed_data_dir)
+        for included_datafile in getIncludedDataFiles():
+            if included_datafile.needsCopy():
+                dest_path = os.path.join(relative_data_dir, included_datafile.dest_path)
+
+                if included_datafile.kind == "data_blob":
+                    makePath(os.path.dirname(dest_path))
+
+                    with openTextFile(filename=dest_path, mode="wb") as output_file:
+                        output_file.write(included_datafile.data)
+                elif included_datafile.kind == "data_file":
+                    makePath(os.path.dirname(dest_path))
+
+                    copyFileWithPermissions(
+                        source_path=included_datafile.source_path,
+                        dest_path=dest_path,
+                        dist_dir=relative_data_dir,
+                    )
+
+        if isWin32Windows():
+            embed_lib_name = "np_embed.lib"
+        else:
+            embed_lib_name = "libnp_embed.a"
+        embed_lib_path = os.path.join(OutputDirectories.getSourceDirectoryPath(), "Embedded", embed_lib_name)
+        subprocess.call([sys.executable, "-m", "rebuildembed", embed_data_dir, embed_lib_path], shell=False)
+
     # Make the actual compilation.
     result, scons_options = compileTree()
 
@@ -1170,29 +1209,31 @@ def _main():
 
         setMainEntryPoint(binary_filename)
 
-        for module in ModuleRegistry.getDoneModules():
-            addIncludedEntryPoints(considerExtraDlls(module))
+        if not isExperimental("embedded"):
+            for module in ModuleRegistry.getDoneModules():
+                addIncludedEntryPoints(considerExtraDlls(module))
 
-        detectUsedDLLs(
-            standalone_entry_points=getStandaloneEntryPoints(),
-            source_dir=OutputDirectories.getSourceDirectoryPath(
-                onefile=False, create=False
-            ),
-        )
+            detectUsedDLLs(
+                standalone_entry_points=getStandaloneEntryPoints(),
+                source_dir=OutputDirectories.getSourceDirectoryPath(
+                    onefile=False, create=False
+                ),
+            )
 
         dist_dir = OutputDirectories.getStandaloneDirectoryPath(bundle=True, real=False)
 
         if not shallOnlyExecCCompilerCall():
-            main_standalone_entry_point, copy_standalone_entry_points = copyDllsUsed(
-                dist_dir=dist_dir,
-                standalone_entry_points=getStandaloneEntryPoints(),
-            )
+            if not isExperimental("embedded"):
+                main_standalone_entry_point, copy_standalone_entry_points = copyDllsUsed(
+                    dist_dir=dist_dir,
+                    standalone_entry_points=getStandaloneEntryPoints(),
+                )
 
             data_file_paths = copyDataFiles(
                 standalone_entry_points=getStandaloneEntryPoints()
             )
 
-            if isMacOS():
+            if isMacOS() and not isExperimental("embedded"):
                 signDistributionMacOS(
                     dist_dir=dist_dir,
                     data_file_paths=data_file_paths,
@@ -1201,6 +1242,42 @@ def _main():
                 )
 
             dist_dir = OutputDirectories.renameStandaloneDirectory(dist_dir)
+
+        if isStandaloneMode() and isExperimental("embedded"):
+            link_data = loadJsonFromFilename(os.path.join(sys.prefix, "link.json"))
+            end_user_link_flags = link_data["link_flags"]
+
+            end_user_link_flags += ["/LIBPATH:libs"]
+
+            for lib in link_data["libraries"]:
+                if isExperimental("nuitka-python-embed") and lib.endswith(embed_lib_name):
+                    continue
+                if os.path.isfile(lib):
+                    makePath(os.path.join(dist_dir, "libs"))
+                    lib_dest = os.path.join(dist_dir, "libs", os.path.basename(lib))
+                    if os.path.exists(lib_dest):
+                        lib_dest = os.path.join(dist_dir, "libs",
+                                                hashlib.md5(lib.encode('utf-8')).hexdigest() + "_" + os.path.basename(
+                                                    lib))
+                    copyFile(lib, lib_dest)
+                    end_user_link_flags.append(os.path.join("libs", os.path.basename(lib)))
+                else:
+                    if (
+                        isWin32Windows()
+                        and not lib.endswith(".lib")
+                        and not lib.startswith("/")
+                    ):
+                        lib += ".lib"
+                    end_user_link_flags.append(lib)
+            if isExperimental("nuitka-python-embed"):
+                copyFile(embed_lib_path, os.path.join(dist_dir, "libs", embed_lib_name))
+
+            if "link_flags" in link_data:
+                general.warning(
+                    "The following link flags must be included in your final link: "
+                    + " ".join(end_user_link_flags),
+                    keep_format=True,
+                )
 
         onStandaloneDistributionFinished(
             dist_dir=dist_dir,
