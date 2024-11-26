@@ -284,7 +284,10 @@ def executePostProcessing():
 
     result_filename = OutputDirectories.getResultFullpath(onefile=False)
 
-    if isWin32Windows():
+    if (
+        isWin32Windows()
+        and not Options.isExperimental("embedded")
+    ):
         if not Options.shallMakeModule():
             if python_version < 0x300:
                 # Copy the Windows manifest from the CPython binary to the created

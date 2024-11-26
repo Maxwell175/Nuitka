@@ -38,7 +38,6 @@ from .SconsUtils import (
     raiseNoCompilerFoundErrorExit,
     setEnvironmentVariable,
 )
-from ..Options import isExperimental
 
 
 # spell-checker: ignore LIBPATH,CPPDEFINES,CPPPATH,CXXVERSION,CCFLAGS,LINKFLAGS,CXXFLAGS
@@ -428,7 +427,7 @@ def decideConstantsBlobResourceMode(env, module_mode):
     if "NUITKA_RESOURCE_MODE" in os.environ:
         resource_mode = os.environ["NUITKA_RESOURCE_MODE"]
         reason = "user provided"
-    elif isExperimental("embedded"):
+    elif "embedded" in env.experimental_flags:
         resource_mode = "code"
         reason = "embedded mode requires code resources"
     elif isWin32Windows():

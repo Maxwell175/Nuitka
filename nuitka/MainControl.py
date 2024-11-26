@@ -1063,17 +1063,24 @@ def _main():
             os.path.join(sys.prefix, "link.json")
         )
         libs_to_merge = []
+        end_user_link_flags = link_data["link_flags"]
         combined_lib = os.path.join(dist_dir, "nuitka_python" + getSharedLibrarySuffix(preferred=True))
         if Options.isMacOS():
             for lib in link_data["libraries"]:
                 if os.path.isfile(lib):
                     libs_to_merge.append(lib)
             callProcess(["libtool", "-o", combined_lib, binary_filename, *libs_to_merge])
+        elif Options.isWin32Windows():
+            for lib in link_data["libraries"]:
+                if not os.path.isfile(lib):
+                    if not lib.endswith('.lib') and not lib.startswith('/'):
+                        lib += ".lib"
+                    end_user_link_flags.append(lib)
 
         general.warning("The combined standalone library is available at " + combined_lib)
         if "link_flags" in link_data:
             general.warning("The following link flags must be included in your final link: " +
-                            " ".join(link_data["link_flags"]))
+                            " ".join(end_user_link_flags))
 
     if Options.isStandaloneMode():
         Plugins.onStandaloneDistributionFinished(dist_dir)

@@ -1120,7 +1120,15 @@ writeSconsReport(env=env, target=target)
 setSconsProgressBarTotal(name=env.progressbar_name, total=len(source_files))
 
 scons_details_logger.info("Launching Scons target: %s" % target)
-env.Default(target)
+
+if os.name == "nt" and env.nuitka_python and "embedded" in env.experimental_flags:
+    real_libs = []
+    for lib in link_data["libraries"]:
+        if os.path.isfile(lib):
+            real_libs.append(lib)
+    env.Default(target, env.StaticLibrary(os.path.join(os.path.dirname(result_exe), "nuitka_python"), [changeFilenameExtension(result_exe, ".lib")] + real_libs))
+else:
+    env.Default(target)
 
 #     Part of "Nuitka", an optimizing Python compiler that is compatible and
 #     integrates with CPython, but also works on its own.
