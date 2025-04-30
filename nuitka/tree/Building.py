@@ -980,6 +980,8 @@ required to compiled."""
             % module_name
         )
         result = "compiled"
+    elif isExperimental("no-compiled"):
+        result = "bytecode"
 
     # Include all of standard library as bytecode, for now. We need to identify
     # which ones really need that.
