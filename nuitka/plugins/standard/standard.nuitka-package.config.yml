@@ -2250,7 +2250,11 @@
         'IPython': 'ignore'
       when: 'not use_ipython'
 
-- module-name: 'jedi' # checksum: 6be45546
+- module-name: 'jedi' # checksum: 58f1a7d7
+  data-files:
+    - patterns:
+        - '**/*.pyi'
+
   anti-bloat:
     - description: 'allow pydoc inside jedi, too dependent to remove'
       bloat-mode-overrides:
@@ -2691,7 +2695,10 @@
         '_test': 'un-callable'
         'main': 'un-callable'
 
-- module-name: 'matplotlib' # checksum: 11ca5d4
+- module-name: 'matplotlib' # checksum: d22c0e1f
+  data-files:
+    - dirs:
+        - 'mpl-data'
   anti-bloat:
     - description: 'remove setuptools and pytest testing framework reference'
       replacements_plain:
@@ -4094,6 +4101,11 @@
         - 'pango'
         - 'cairo'
 
+- module-name: 'parso' # checksum: 5ee34e01
+  data-files:
+    - patterns:
+        - '**/*.txt'
+
 - module-name: 'passlib.apache' # checksum: 4e9f8101
   implicit-imports:
     - depends:
@@ -4542,6 +4554,13 @@
         # Maybe misplaced those here. TODO: Also make recursive dependency a thing.
         - 'plotly.graph_objs.layout.*'
         - 'plotly.graph_objs.layout.*.*'
+
+- module-name: 'plotnine' # checksum: 14cea83c
+  data-files:
+    - dirs:
+        - 'data'
+    - patterns:
+        - '*.csv'
 
 - module-name: 'plumbum.cli.progress' # checksum: 8a7f9d4c
   anti-bloat:
@@ -7015,7 +7034,11 @@
         'from statsmodels.tools._testing import PytestTester': 'from statsmodels.sandbox import PytestTester'
       when: 'not use_pytest'
 
-- module-name: 'statsmodels.datasets' # checksum: 29fd834d
+- module-name: 'statsmodels.datasets' # checksum: 705c029d
+  data-files:
+    - patterns:
+        - '**/*.csv'
+
   anti-bloat:
     - description: 'remove statsmodels testing framework'
       replacements_plain:
