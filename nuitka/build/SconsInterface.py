@@ -380,7 +380,10 @@ cd "${0%/*}"
 
 def _removeUnwantedArtifacts(scons_created_exe):
     if isWin32Windows():
-        for extension in (".exp", ".lib"):
+        ext_to_remove = [".exp", ".lib"]
+        if isExperimental("embedded"):
+            ext_to_remove.remove(".lib")
+        for extension in ext_to_remove:
             linker_left_over = changeFilenameExtension(scons_created_exe, extension)
 
             deleteFile(linker_left_over, must_exist=False)

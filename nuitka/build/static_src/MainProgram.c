@@ -12,10 +12,6 @@
  *
  */
 
-#ifdef _MONOLITHPY
-#include "np_embed.h"
-#endif
-
 #if defined(_WIN32)
 #include <windows.h>
 #endif

@@ -802,8 +802,7 @@ def tool_list(platform, env):
         assembler = None
         # fortran_compiler = FindTool(fortran_compilers, env) or fortran_compilers[0]
         fortran_compiler = None
-        # ar = FindTool(ars, env) or ars[0]
-        ar = None
+        ar = FindTool(ars, env) or ars[0]
 
     d_compilers = ['dmd', 'ldc', 'gdc']
 # Nuitka: Avoid unused tools

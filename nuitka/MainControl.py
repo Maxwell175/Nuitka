@@ -10,8 +10,8 @@ a distribution folder.
 
 """
 
-import os
 import hashlib
+import os
 import sys
 
 from nuitka.build.DataComposerInterface import runDataComposer
@@ -94,7 +94,6 @@ from nuitka.options.Options import (
     isShowMemory,
     isShowProgress,
     isStandaloneMode,
-    isWin32Windows,
     shallAskForWindowsAdminRights,
     shallCreateDmgFile,
     shallCreatePythonPgoInput,
@@ -1141,15 +1140,26 @@ def _main():
 
     dumpTreeXML()
 
-    if isExperimental("nuitka-python-embed"):
-        import sysconfig
+    if isExperimental("monolithpy-data-embed"):
+
         import subprocess
+        import sysconfig
+
         from nuitka.freezer.IncludedDataFiles import getIncludedDataFiles
-        from nuitka.utils.FileOperations import copyTree, copyFileWithPermissions
-        embed_data_dir = os.path.join(OutputDirectories.getSourceDirectoryPath(), "Embedded", "embed_data")
+        from nuitka.utils.FileOperations import (
+            copyFileWithPermissions,
+            copyTree,
+        )
+
+        embed_data_dir = os.path.join(
+            OutputDirectories.getSourceDirectoryPath(onefile=False, create=False), "Embedded", "embed_data"
+        )
         relative_data_dir = os.path.join(embed_data_dir, "__relative__")
         makePath(relative_data_dir)
-        copyTree(os.path.join(sysconfig.get_config_var("prefix"), "Embedded", "embed_data"), embed_data_dir)
+        copyTree(
+            os.path.join(sysconfig.get_config_var("prefix"), "Embedded", "embed_data"),
+            embed_data_dir,
+        )
         for included_datafile in getIncludedDataFiles():
             if included_datafile.needsCopy():
                 dest_path = os.path.join(relative_data_dir, included_datafile.dest_path)
@@ -1165,15 +1175,20 @@ def _main():
                     copyFileWithPermissions(
                         source_path=included_datafile.source_path,
                         dest_path=dest_path,
-                        dist_dir=relative_data_dir,
+                        target_dir=relative_data_dir,
                     )
 
         if isWin32Windows():
-            embed_lib_name = "np_embed.lib"
+            embed_lib_name = "mp_embed.lib"
         else:
-            embed_lib_name = "libnp_embed.a"
-        embed_lib_path = os.path.join(OutputDirectories.getSourceDirectoryPath(), "Embedded", embed_lib_name)
-        subprocess.call([sys.executable, "-m", "rebuildembed", embed_data_dir, embed_lib_path], shell=False)
+            embed_lib_name = "libmp_embed.a"
+        embed_lib_path = os.path.join(
+            OutputDirectories.getSourceDirectoryPath(onefile=False, create=False), "Embedded", embed_lib_name
+        )
+        subprocess.call(
+            [sys.executable, "-m", "rebuildembed", embed_data_dir, embed_lib_path],
+            shell=False,
+        )
 
     # Make the actual compilation.
     result, scons_options = compileTree()
@@ -1224,9 +1239,11 @@ def _main():
 
         if not shallOnlyExecCCompilerCall():
             if not isExperimental("embedded"):
-                main_standalone_entry_point, copy_standalone_entry_points = copyDllsUsed(
-                    dist_dir=dist_dir,
-                    standalone_entry_points=getStandaloneEntryPoints(),
+                main_standalone_entry_point, copy_standalone_entry_points = (
+                    copyDllsUsed(
+                        dist_dir=dist_dir,
+                        standalone_entry_points=getStandaloneEntryPoints(),
+                    )
                 )
 
             data_file_paths = copyDataFiles(
@@ -1250,17 +1267,25 @@ def _main():
             end_user_link_flags += ["/LIBPATH:libs"]
 
             for lib in link_data["libraries"]:
-                if isExperimental("nuitka-python-embed") and lib.endswith(embed_lib_name):
+                if isExperimental("nuitka-python-embed") and lib.endswith(
+                    embed_lib_name
+                ):
                     continue
                 if os.path.isfile(lib):
                     makePath(os.path.join(dist_dir, "libs"))
                     lib_dest = os.path.join(dist_dir, "libs", os.path.basename(lib))
                     if os.path.exists(lib_dest):
-                        lib_dest = os.path.join(dist_dir, "libs",
-                                                hashlib.md5(lib.encode('utf-8')).hexdigest() + "_" + os.path.basename(
-                                                    lib))
+                        lib_dest = os.path.join(
+                            dist_dir,
+                            "libs",
+                            hashlib.md5(lib.encode("utf8")).hexdigest()
+                            + "_"
+                            + os.path.basename(lib),
+                        )
                     copyFile(lib, lib_dest)
-                    end_user_link_flags.append(os.path.join("libs", os.path.basename(lib)))
+                    end_user_link_flags.append(
+                        os.path.join("libs", os.path.basename(lib))
+                    )
                 else:
                     if (
                         isWin32Windows()

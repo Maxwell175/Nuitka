@@ -277,9 +277,9 @@ elif env.exe_mode or env.dll_mode:
             os.path.join(env.python_prefix_external, "link.json")
         )
         if os.name == "nt":
-            lib_name = "np_embed.lib"
+            lib_name = "mp_embed.lib"
         else:
-            lib_name = "libnp_embed.a"
+            lib_name = "libmp_embed.a"
 
         for lib in link_data["libraries"]:
             if "embedded" in env.experimental_flags and lib.endswith(lib_name):
@@ -535,7 +535,7 @@ elif "embedded" in env.experimental_flags:
         targets = [env.StaticLibrary(result_base_path, source_files)]
 else:
     # For scons internal use, we use Python native paths as MSYS2 does wrong things otherwise.
-    target = env.Program(os.path.normpath(result_exe), source_files)
+    targets = [env.Program(os.path.normpath(result_exe), source_files)]
 
 
 def createBuildDefinitionsFile():
