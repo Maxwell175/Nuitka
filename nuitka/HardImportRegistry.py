@@ -23,7 +23,7 @@ from nuitka.States import states
 from nuitka.utils.Utils import isWin32Windows
 
 # These module are supported in code generation to be imported the hard way.
-hard_modules = set(
+builtin_hard_modules = set(
     (
         "os",
         "ntpath",
@@ -54,6 +54,8 @@ hard_modules = set(
         "builtins",
     )
 )
+
+hard_modules = builtin_hard_modules.copy()
 
 hard_modules_aliases = {
     "os.path": os.path.__name__,
@@ -390,7 +392,7 @@ def addModuleDynamicHard(module_name):
 
 
 def isHardModuleDynamic(module_name):
-    return module_name in hard_modules_dynamic
+    return module_name in hard_modules_dynamic or module_name not in builtin_hard_modules
 
 
 #     Part of "Nuitka", an optimizing Python compiler that is compatible and

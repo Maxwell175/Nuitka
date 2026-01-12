@@ -1009,17 +1009,7 @@ def locateModule(module_name, parent_package, level, logger=None):
         type(module_package) is ModuleName and module_package != ""
     ), ("Must not attempt to locate %r" % module_name)
 
-    if module_kind == "built-in":
-        from nuitka.HardImportRegistry import (
-            addModuleDynamicHard,
-            isHardModule,
-        )
-        if not isHardModule(found_module_name):
-            # If we encounter an unexpected builtin module,
-            # mark it as a dynamic hard import.
-            addModuleDynamicHard(found_module_name)
-
-    elif module_filename is not None:
+    if module_filename is not None and module_kind != "built-in":
         module_filename = getNormalizedPath(module_filename)
 
         if found_module_name == "distutils":
