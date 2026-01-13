@@ -1267,7 +1267,7 @@ def _main():
             end_user_link_flags += ["/LIBPATH:libs"]
 
             for lib in link_data["libraries"]:
-                if isExperimental("nuitka-python-embed") and lib.endswith(
+                if isExperimental("monolithpy-data-embed") and lib.endswith(
                     embed_lib_name
                 ):
                     continue
@@ -1294,7 +1294,7 @@ def _main():
                     ):
                         lib += ".lib"
                     end_user_link_flags.append(lib)
-            if isExperimental("nuitka-python-embed"):
+            if isExperimental("monolithpy-data-embed"):
                 copyFile(embed_lib_path, os.path.join(dist_dir, "libs", embed_lib_name))
 
             if "link_flags" in link_data:

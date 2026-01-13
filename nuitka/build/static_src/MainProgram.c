@@ -12,6 +12,11 @@
  *
  */
 
+#ifdef _MONOLITHPY
+// MonolithPy VFS support needs to be included as early as possible.
+#include "mp_embed.h"
+#endif
+
 #if defined(_WIN32)
 #include <windows.h>
 #endif
